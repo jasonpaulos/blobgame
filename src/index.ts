@@ -174,59 +174,80 @@ function toggleStart() {
   document.getElementById("startButton")!.textContent = "Pause";
 }
 
+let fastForwardRounds = 0;
+
+function fastForward() {
+  if (running && fastForwardRounds === 0) {
+    fastForwardRounds = 100;
+  }
+}
+
 let round = 0;
 
 function step() {
   if (!running) return;
 
-  const stepDuration = parseInt(
-    (document.getElementById("stepDuration") as HTMLSelectElement).value,
-    10,
-  );
+  const stepDuration =
+    fastForwardRounds > 0
+      ? undefined
+      : parseInt(
+          (document.getElementById("stepDuration") as HTMLSelectElement).value,
+          10,
+        );
 
   const result = game.takeTurn();
 
-  const newPlayerPosition = gamePositionToThreePosition(
-    result.newPlayerState.xPosition,
-    result.newPlayerState.zPosition,
-  );
-  if (result.playerAction === PlayerAction.JUMP) {
-    blob.position.x = newPlayerPosition.x;
-    blob.position.y = 0;
-    blob.position.z = newPlayerPosition.z;
-    gsap.to(blob.position, {
-      y: 1,
-      duration: stepDuration / 1000 / 2,
-      yoyo: true,
-      repeat: 1,
-    });
-  } else {
-    blob.position.y = 0;
-    gsap.to(blob.position, {
-      x: newPlayerPosition.x,
-      z: newPlayerPosition.z,
-      duration: stepDuration / 1000,
-    });
+  if (stepDuration !== undefined) {
+    const newPlayerPosition = gamePositionToThreePosition(
+      result.newPlayerState.xPosition,
+      result.newPlayerState.zPosition,
+    );
+    if (result.playerAction === PlayerAction.JUMP) {
+      blob.position.x = newPlayerPosition.x;
+      blob.position.y = 0;
+      blob.position.z = newPlayerPosition.z;
+      gsap.to(blob.position, {
+        y: 1,
+        duration: stepDuration / 1000 / 2,
+        yoyo: true,
+        repeat: 1,
+      });
+    } else {
+      blob.position.y = 0;
+      gsap.to(blob.position, {
+        x: newPlayerPosition.x,
+        z: newPlayerPosition.z,
+        duration: stepDuration / 1000,
+      });
+    }
+
+    updateArrows(); // Update arrows after each turn
+
+    document.getElementById("round")!.textContent = round.toString();
+    document.getElementById("epsilon")!.textContent =
+      learningController.epsilon.toFixed(3);
+    document.getElementById("currentState")!.textContent =
+      `(${result.newPlayerState.xPosition}, ${result.newPlayerState.zPosition})`;
+    document.getElementById("lastAction")!.textContent = playerActionToString(
+      result.playerAction,
+    );
   }
-
-  updateArrows(); // Update arrows after each turn
-
-  document.getElementById("round")!.textContent = round.toString();
-  document.getElementById("epsilon")!.textContent =
-    learningController.epsilon.toFixed(3);
-  document.getElementById("currentState")!.textContent =
-    `(${result.newPlayerState.xPosition}, ${result.newPlayerState.zPosition})`;
-  document.getElementById("lastAction")!.textContent = playerActionToString(
-    result.playerAction,
-  );
 
   round++;
 
-  setTimeout(step, stepDuration + 100);
+  if (stepDuration !== undefined) {
+    setTimeout(step, stepDuration + 100);
+  } else {
+    fastForwardRounds--;
+    setTimeout(step, 0);
+  }
 }
 
-// Add event listener to the button
+// Add event listener to the buttons
 document.getElementById("startButton")!.addEventListener("click", toggleStart);
+document
+  .getElementById("fastForwardButton")!
+  .addEventListener("click", fastForward);
 
 // Render the scene
 function animate() {

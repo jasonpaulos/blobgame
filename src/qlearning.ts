@@ -85,6 +85,7 @@ export class QLearningPlayerController extends PlayerController {
   public observeResult(result: TurnResult): void {
     const { playerAction, newPlayerState } = result;
     const reward = result.newPlayerState.points - result.oldPlayerState.points;
+    console.log("Reward:", reward);
     this.updateQTable(
       newPlayerState.xPosition,
       newPlayerState.zPosition,
