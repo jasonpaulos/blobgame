@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { gsap } from 'gsap';
+import gsap from 'gsap';
 
 // Create the scene
 const scene = new THREE.Scene();
@@ -87,7 +87,7 @@ function moveBlob() {
 }
 
 // Add event listener to the button
-document.getElementById('moveButton').addEventListener('click', moveBlob);
+document.getElementById('moveButton')!.addEventListener('click', moveBlob);
 
 // Render the scene
 function animate() {
