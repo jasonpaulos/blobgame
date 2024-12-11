@@ -1,44 +1,48 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>3D Scene with Three.js</title>
     <style>
-        body { margin: 0; }
-        canvas { display: block; }
-        #controls {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 100;
-            color: white;
-        }
-        #info {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            z-index: 100;
-            color: white;
-        }
+      body {
+        margin: 0;
+      }
+      canvas {
+        display: block;
+      }
+      #controls {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 100;
+        color: white;
+      }
+      #info {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        z-index: 100;
+        color: white;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="controls">
-        <button id="startButton">Start</button>
-        <label for="stepDuration">Step Duration:</label>
-        <select id="stepDuration">
-            <option value="200">200ms</option>
-            <option value="500">500ms</option>
-            <option value="1000" selected>1000ms</option>
-        </select>
+      <button id="startButton">Start</button>
+      <label for="stepDuration">Step Duration:</label>
+      <select id="stepDuration">
+        <option value="200">200ms</option>
+        <option value="500">500ms</option>
+        <option value="1000" selected>1000ms</option>
+      </select>
     </div>
     <div id="info">
-        <p>Round: <span id="round">0</span></p>
-        <p>Epsilon: <span id="epsilon"></span></p>
-        <p>Current state: <span id="currentState"></span></p>
-        <p>Last action: <span id="lastAction"></span></p>
+      <p>Round: <span id="round">0</span></p>
+      <p>Epsilon: <span id="epsilon"></span></p>
+      <p>Current state: <span id="currentState"></span></p>
+      <p>Last action: <span id="lastAction"></span></p>
     </div>
     <script type="module" src="index.ts"></script>
-</body>
+  </body>
 </html>
