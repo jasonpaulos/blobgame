@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import gsap from "gsap";
-import { QLearning, Action } from "./qlearning";
+import { Game, PlayerAction } from "./game";
+import { QLearningPlayerController } from "./qlearning";
 
 // Create the scene
 const scene = new THREE.Scene();
@@ -31,6 +32,30 @@ const gridMaxX = Math.floor(gridSize / 2);
 const gridMinZ = -Math.floor(gridSize / 2);
 const gridMaxZ = Math.floor(gridSize / 2);
 
+const learningController = new QLearningPlayerController({
+  alpha: 0.1,
+  gamma: 0.9,
+  epsilon: 1,
+  epsilonDecaryRate: 0.999,
+});
+
+const game = new Game({
+  gridLengthX: gridSize,
+  gridLengthZ: gridSize,
+  player: {
+    controller: learningController,
+    state: {
+      xPosition: Math.floor(gridSize / 2),
+      zPosition: Math.floor(gridSize / 2),
+      points: 0,
+    },
+  },
+});
+
+function gamePositionToThreePosition(x: number, z: number): THREE.Vector3 {
+  return new THREE.Vector3(x + gridMinX, 0, z + gridMinZ);
+}
+
 // Create a grid floor
 const gridHelper = new THREE.GridHelper(gridSize, gridSize);
 gridHelper.position.set(0, -0.5, 0); // Position the grid at the center of the scene
@@ -59,7 +84,11 @@ const blobMaterial = new THREE.MeshStandardMaterial({
   metalness: 0.1,
 });
 const blob = new THREE.Mesh(blobGeometry, blobMaterial);
-blob.position.set(2, 0, 2); // Position the blob in the scene
+const blobPosition = gamePositionToThreePosition(
+  game.player.state.xPosition,
+  game.player.state.zPosition,
+);
+blob.position.set(blobPosition.x, blobPosition.y, blobPosition.z);
 scene.add(blob);
 
 // Add a point light source for better visibility of the blob
@@ -70,14 +99,6 @@ scene.add(light);
 // Add an ambient light for uniform lighting
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
-
-// Initialize Q-learning
-const qLearning = new QLearning({
-  alpha: 0.1,
-  gamma: 0.9,
-  epsilon: 1,
-  epsilonDecaryRate: 0.999,
-});
 
 // Create arrows for each grid cell
 const arrows: THREE.ArrowHelper[][] = [];
@@ -95,20 +116,20 @@ for (let x = gridMinX; x <= gridMaxX; x++) {
   arrows.push(row);
 }
 
-const actionToDirection = new Map<Action, THREE.Vector3>([
-  ["forward", new THREE.Vector3(0, 0, 1)],
-  ["backward", new THREE.Vector3(0, 0, -1)],
-  ["left", new THREE.Vector3(-1, 0, 0)],
-  ["right", new THREE.Vector3(1, 0, 0)],
-  ["jump", new THREE.Vector3(0, 1, 0)],
+const actionToDirection = new Map<PlayerAction, THREE.Vector3>([
+  [PlayerAction.MOVE_Z_POSITIVE, new THREE.Vector3(0, 0, 1)],
+  [PlayerAction.MOVE_Z_NEGATIVE, new THREE.Vector3(0, 0, -1)],
+  [PlayerAction.MOVE_X_NEGATIVE, new THREE.Vector3(-1, 0, 0)],
+  [PlayerAction.MOVE_X_POSITIVE, new THREE.Vector3(1, 0, 0)],
+  [PlayerAction.JUMP, new THREE.Vector3(0, 1, 0)],
 ]);
 
 // Function to update arrows based on Q-values
 function updateArrows() {
-  for (let x = gridMinX; x <= gridMaxX; x++) {
-    for (let z = gridMinZ; z <= gridMaxZ; z++) {
-      const arrow = arrows[x - gridMinX][z - gridMinZ];
-      const spread = qLearning.getActionSpread(x, z);
+  for (let x = 0; x < game.gridLengthX; x++) {
+    for (let z = 0; z < game.gridLengthZ; z++) {
+      const arrow = arrows[x][z];
+      const spread = learningController.getActionSpread(x, z);
       const totalDirection = new THREE.Vector3(0, 0, 0);
       for (const [action, value] of spread.entries()) {
         const direction = actionToDirection.get(action)!;
@@ -122,6 +143,21 @@ function updateArrows() {
         arrow.setLength(0.1, 0.2, 0.1);
       }
     }
+  }
+}
+
+function playerActionToString(action: PlayerAction): string {
+  switch (action) {
+    case PlayerAction.MOVE_X_POSITIVE:
+      return "Move positive x";
+    case PlayerAction.MOVE_X_NEGATIVE:
+      return "Move negative x";
+    case PlayerAction.MOVE_Z_POSITIVE:
+      return "Move positive z";
+    case PlayerAction.MOVE_Z_NEGATIVE:
+      return "Move negative z";
+    case PlayerAction.JUMP:
+      return "Jump";
   }
 }
 
@@ -148,84 +184,41 @@ function step() {
     10,
   );
 
-  const action = qLearning.chooseAction(blob.position.x, blob.position.z);
-  let newX = blob.position.x;
-  let newZ = blob.position.z;
-  let reward = -1;
+  const result = game.takeTurn();
 
-  console.log(`Choosing action: ${action}`);
-
-  switch (action) {
-    case "forward":
-      newZ += 1;
-      break;
-    case "backward":
-      newZ -= 1;
-      break;
-    case "left":
-      newX -= 1;
-      break;
-    case "right":
-      newX += 1;
-      break;
-    case "jump":
-      if (blob.position.x === 0 && blob.position.z === 0) {
-        reward = 10; // Reward for jumping in the center
-      }
-      break;
-  }
-
-  console.log(`Moving to: (${newX}, ${newZ})`);
-
-  // Check if the new position is within the boundaries
-  if (
-    newX >= -gridSize / 2 &&
-    newX <= gridSize / 2 &&
-    newZ >= -gridSize / 2 &&
-    newZ <= gridSize / 2
-  ) {
-    if (action === "jump") {
-      // Animate the jump
-      gsap.to(blob.position, {
-        y: 1,
-        duration: stepDuration / 1000 / 2,
-        yoyo: true,
-        repeat: 1,
-      });
-    } else {
-      gsap.to(blob.position, {
-        x: newX,
-        z: newZ,
-        duration: stepDuration / 1000,
-      });
-    }
-    qLearning.updateQTable(
-      blob.position.x,
-      blob.position.z,
-      action,
-      reward,
-      newX,
-      newZ,
-    );
+  const newPlayerPosition = gamePositionToThreePosition(
+    result.newPlayerState.xPosition,
+    result.newPlayerState.zPosition,
+  );
+  if (result.playerAction === PlayerAction.JUMP) {
+    blob.position.x = newPlayerPosition.x;
+    blob.position.y = 0;
+    blob.position.z = newPlayerPosition.z;
+    gsap.to(blob.position, {
+      y: 1,
+      duration: stepDuration / 1000 / 2,
+      yoyo: true,
+      repeat: 1,
+    });
   } else {
-    reward = -10; // Reward for hitting the wall
-    qLearning.updateQTable(
-      blob.position.x,
-      blob.position.z,
-      action,
-      reward,
-      blob.position.x,
-      blob.position.z,
-    );
+    blob.position.y = 0;
+    gsap.to(blob.position, {
+      x: newPlayerPosition.x,
+      z: newPlayerPosition.z,
+      duration: stepDuration / 1000,
+    });
   }
 
-  updateArrows(); // Update arrows after each move
+  updateArrows(); // Update arrows after each turn
 
   document.getElementById("round")!.textContent = round.toString();
   document.getElementById("epsilon")!.textContent =
-    qLearning.epsilon.toFixed(3);
-  document.getElementById("currentState")!.textContent = `(${newX}, ${newZ})`;
-  document.getElementById("lastAction")!.textContent = action;
+    learningController.epsilon.toFixed(3);
+  document.getElementById("currentState")!.textContent =
+    `(${result.newPlayerState.xPosition}, ${result.newPlayerState.zPosition})`;
+  document.getElementById("lastAction")!.textContent = playerActionToString(
+    result.playerAction,
+  );
 
   round++;
 
