@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { gsap } from 'gsap';
 
 // Create the scene
 const scene = new THREE.Scene();
@@ -15,8 +16,11 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Create a 5x5 grid floor
-const gridHelper = new THREE.GridHelper(5, 5);
+// Define the boundaries of the grid
+const gridSize = 5;
+
+// Create a grid floor
+const gridHelper = new THREE.GridHelper(gridSize, gridSize);
 gridHelper.position.set(0, -0.5, 0); // Position the grid at the center of the scene
 scene.add(gridHelper);
 
@@ -50,6 +54,40 @@ scene.add(light);
 // Add an ambient light for uniform lighting
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
+
+// Function to move the blob in a random direction
+function moveBlob() {
+    const directions = [
+        { x: 1, z: 0 },
+        { x: -1, z: 0 },
+        { x: 0, z: 1 },
+        { x: 0, z: -1 }
+    ];
+
+    const invalidChoices = new Set();
+
+    while (true) {
+        const choice = Math.floor(Math.random() * directions.length);
+        if (choice in invalidChoices) {
+            continue;
+        }
+
+        const direction = directions[choice];
+        const newX = blob.position.x + direction.x;
+        const newZ = blob.position.z + direction.z;
+
+        // Check if the new position is within the boundaries
+        if (newX >= -gridSize/2 && newX <= gridSize/2 && newZ >= -gridSize/2 && newZ <= gridSize/2) {
+            gsap.to(blob.position, { x: newX, z: newZ, duration: 1 });
+            break;
+        }
+
+        invalidChoices.add(choice);
+    }
+}
+
+// Add event listener to the button
+document.getElementById('moveButton').addEventListener('click', moveBlob);
 
 // Render the scene
 function animate() {
