@@ -35,7 +35,7 @@ const gridMaxZ = Math.floor(gridSize / 2);
 const learningController = new QLearningPlayerController({
   alpha: 0.1,
   gamma: 0.9,
-  epsilon: 1,
+  epsilon: 1.2,
   epsilonDecaryRate: 0.999,
 });
 

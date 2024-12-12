@@ -76,19 +76,30 @@ export class QLearningPlayerController extends PlayerController {
       console.log("Exploiting. Epsilon:", this.epsilon);
       const qValues = this.qTable.get(stateKey);
       if (!qValues) return actions[Math.floor(Math.random() * actions.length)];
-      return Array.from(qValues.entries()).reduce((a, b) =>
-        a[1] > b[1] ? a : b,
-      )[0];
+
+      let maxQValue = qValues.get(PlayerAction.JUMP)!;
+      let maxQValueActions: PlayerAction[] = [];
+      for (const [action, qValue] of qValues.entries()) {
+        if (qValue === maxQValue) {
+          maxQValueActions.push(action);
+        } else if (qValue > maxQValue) {
+          maxQValue = qValue;
+          maxQValueActions = [action];
+        }
+      }
+      return maxQValueActions[
+        Math.floor(Math.random() * maxQValueActions.length)
+      ];
     }
   }
 
   public observeResult(result: TurnResult): void {
-    const { playerAction, newPlayerState } = result;
+    const { playerAction, oldPlayerState, newPlayerState } = result;
     const reward = result.newPlayerState.points - result.oldPlayerState.points;
     console.log("Reward:", reward);
     this.updateQTable(
-      newPlayerState.xPosition,
-      newPlayerState.zPosition,
+      oldPlayerState.xPosition,
+      oldPlayerState.zPosition,
       playerAction,
       reward,
       newPlayerState.xPosition,
@@ -111,8 +122,11 @@ export class QLearningPlayerController extends PlayerController {
       ...Array.from(this.qTable.get(newState)?.values() || [0]),
     );
     const newQValue =
-      oldQValue +
-      this.alpha * (reward + this.gamma * maxFutureQValue - oldQValue);
+      (1 - this.alpha) * oldQValue +
+      this.alpha * (reward + this.gamma * maxFutureQValue);
+    // console.log(
+    //   `Q(${state}, ${action}) from ${oldQValue.toFixed(3)} to ${newQValue.toFixed(3)}`,
+    // );
     this.setQValue(state, action, newQValue);
   }
 }
