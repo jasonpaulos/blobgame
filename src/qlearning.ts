@@ -13,6 +13,33 @@ const actions = [
   PlayerAction.JUMP,
 ];
 
+function weightedRandomChoice(weights: number[]): number {
+  const totalWeight = weights.reduce((acc, w) => acc + w, 0);
+  if (totalWeight === 0) {
+    return Math.floor(Math.random() * weights.length);
+  }
+  let r = Math.random() * totalWeight;
+  for (let i = 0; i < weights.length; i++) {
+    if (r < weights[i]) return i;
+    r -= weights[i];
+  }
+  return weights.length - 1;
+}
+
+function maxChoice(values: number[]): number {
+  let maxIndexes = [0];
+  let max = values[0];
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] > max) {
+      max = values[i];
+      maxIndexes = [i];
+    } else if (values[i] === max) {
+      maxIndexes.push(i);
+    }
+  }
+  return maxIndexes[Math.floor(Math.random() * maxIndexes.length)];
+}
+
 export class QLearningPlayerController extends PlayerController {
   private qTable: Map<string, Map<PlayerAction, number>>;
   private alpha: number;
@@ -76,20 +103,8 @@ export class QLearningPlayerController extends PlayerController {
       console.log("Exploiting. Epsilon:", this.epsilon);
       const qValues = this.qTable.get(stateKey);
       if (!qValues) return actions[Math.floor(Math.random() * actions.length)];
-
-      let maxQValue = qValues.get(PlayerAction.JUMP)!;
-      let maxQValueActions: PlayerAction[] = [];
-      for (const [action, qValue] of qValues.entries()) {
-        if (qValue === maxQValue) {
-          maxQValueActions.push(action);
-        } else if (qValue > maxQValue) {
-          maxQValue = qValue;
-          maxQValueActions = [action];
-        }
-      }
-      return maxQValueActions[
-        Math.floor(Math.random() * maxQValueActions.length)
-      ];
+      const entries = Array.from(qValues.entries());
+      return entries[maxChoice(entries.map((e) => e[1]))][0];
     }
   }
 
