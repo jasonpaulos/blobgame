@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "parcel src/index.html",
-    "build": "parcel build src/index.html",
+    "build": "parcel build src/index.html --public-url .",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "echo \"Error: no test specified\" && exit 1"
