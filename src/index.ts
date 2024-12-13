@@ -3,6 +3,7 @@ import gsap from "gsap";
 import { Game, PlayerAction } from "./game";
 import { QLearningPlayerController } from "./qlearning";
 // import { ReinforceJSPlayerController } from "./reinforce";
+import { AutoRewardPolicy } from "./rewardPolicies";
 
 // Create the scene
 const scene = new THREE.Scene();
@@ -49,9 +50,9 @@ const game = new Game({
     state: {
       xPosition: Math.floor(gridSize / 2),
       zPosition: Math.floor(gridSize / 2),
-      points: 0,
     },
   },
+  rewardPolicy: new AutoRewardPolicy(),
 });
 
 function gamePositionToThreePosition(x: number, z: number): THREE.Vector3 {

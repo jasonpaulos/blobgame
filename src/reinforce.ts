@@ -85,9 +85,8 @@ Determine a state, e.g.:
     /*
 Now calculate some Reward and let the Solver learn from it, e.g.:
 */
-    const reward = result.newPlayerState.points - result.oldPlayerState.points;
-    console.log("Reward:", reward);
+    console.log("Reward:", result.playerReward);
 
-    this.solver.learn(reward);
+    this.solver.learn(result.playerReward);
   }
 }

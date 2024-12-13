@@ -14,7 +14,6 @@ export abstract class PlayerController {
 export interface PlayerState {
   xPosition: number;
   zPosition: number;
-  points: number;
 }
 
 export interface Player {
@@ -22,10 +21,18 @@ export interface Player {
   state: PlayerState;
 }
 
-export interface TurnResult {
+export abstract class RewardPolicy {
+  abstract getReward(result: TurnResultWithoutReward): number;
+}
+
+export interface TurnResultWithoutReward {
   playerAction: PlayerAction;
   oldPlayerState: PlayerState;
   newPlayerState: PlayerState;
+}
+
+export interface TurnResult extends TurnResultWithoutReward {
+  playerReward: number;
 }
 
 export class Game {
@@ -33,19 +40,23 @@ export class Game {
   public readonly gridLengthZ: number;
 
   public readonly player: Player;
+  public readonly rewardPolicy: RewardPolicy;
 
   constructor({
     gridLengthX,
     gridLengthZ,
     player,
+    rewardPolicy,
   }: {
     gridLengthX: number;
     gridLengthZ: number;
     player: Player;
+    rewardPolicy: RewardPolicy;
   }) {
     this.gridLengthX = gridLengthX;
     this.gridLengthZ = gridLengthZ;
     this.player = player;
+    this.rewardPolicy = rewardPolicy;
   }
 
   public takeTurn(): TurnResult {
@@ -55,58 +66,50 @@ export class Game {
     const newPlayerState: PlayerState = {
       xPosition: oldPlayerState.xPosition,
       zPosition: oldPlayerState.zPosition,
-      points: oldPlayerState.points,
     };
 
     switch (playerAction) {
       case PlayerAction.MOVE_X_POSITIVE:
         if (newPlayerState.xPosition < this.gridLengthX - 1) {
           newPlayerState.xPosition += 1;
-        } else {
-          newPlayerState.points -= 10;
         }
         break;
       case PlayerAction.MOVE_X_NEGATIVE:
         if (newPlayerState.xPosition > 0) {
           newPlayerState.xPosition -= 1;
-        } else {
-          newPlayerState.points -= 10;
         }
         break;
       case PlayerAction.MOVE_Z_POSITIVE:
         if (newPlayerState.zPosition < this.gridLengthZ - 1) {
           newPlayerState.zPosition += 1;
-        } else {
-          newPlayerState.points -= 10;
         }
         break;
       case PlayerAction.MOVE_Z_NEGATIVE:
         if (newPlayerState.zPosition > 0) {
           newPlayerState.zPosition -= 1;
-        } else {
-          newPlayerState.points -= 10;
         }
         break;
       case PlayerAction.JUMP:
         if (
           newPlayerState.xPosition === Math.floor(this.gridLengthX / 2) &&
           newPlayerState.zPosition === Math.floor(this.gridLengthZ / 2)
-        ) {
-          newPlayerState.points += 100;
-        }
-        break;
-    }
-
-    if (newPlayerState.points === oldPlayerState.points) {
-      newPlayerState.points -= 1;
+        )
+          break;
     }
 
     this.player.state = newPlayerState;
 
-    const result: TurnResult = {
+    const resultWithoutReward: TurnResultWithoutReward = {
       playerAction,
       newPlayerState,
       oldPlayerState,
+    };
+
+    const playerReward = this.rewardPolicy.getReward(resultWithoutReward);
+
+    const result: TurnResult = {
+      ...resultWithoutReward,
+      playerReward,
     };
 
     this.player.controller.observeResult(result);
