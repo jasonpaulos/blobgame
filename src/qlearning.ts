@@ -119,7 +119,7 @@ export class QLearningPlayerController extends PlayerController {
     const newState = this.getStateKey(newX, newZ);
     const oldQValue = this.getQValue(state, action);
     const maxFutureQValue = Math.max(
-      ...Array.from(this.qTable.get(newState)?.values() || [0]),
+      ...actions.map((a) => this.getQValue(newState, a)),
     );
     const newQValue =
       (1 - this.alpha) * oldQValue +

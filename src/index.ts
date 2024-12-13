@@ -2,6 +2,7 @@ import * as THREE from "three";
 import gsap from "gsap";
 import { Game, PlayerAction } from "./game";
 import { QLearningPlayerController } from "./qlearning";
+// import { ReinforceJSPlayerController } from "./reinforce";
 
 // Create the scene
 const scene = new THREE.Scene();
@@ -38,6 +39,7 @@ const learningController = new QLearningPlayerController({
   epsilon: 1.2,
   epsilonDecaryRate: 0.999,
 });
+// const learningController = new ReinforceJSPlayerController();
 
 const game = new Game({
   gridLengthX: gridSize,
