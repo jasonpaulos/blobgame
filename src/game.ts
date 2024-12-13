@@ -8,7 +8,7 @@ export enum PlayerAction {
 
 export abstract class PlayerController {
   abstract takeAction(state: PlayerState): PlayerAction;
-  abstract observeResult(result: TurnResult): void;
+  abstract observeResult(result: TurnResult, reward: number): void;
 }
 
 export interface PlayerState {
@@ -22,17 +22,13 @@ export interface Player {
 }
 
 export abstract class RewardPolicy {
-  abstract getReward(result: TurnResultWithoutReward): number;
+  abstract getReward(result: TurnResult): number;
 }
 
-export interface TurnResultWithoutReward {
+export interface TurnResult {
   playerAction: PlayerAction;
   oldPlayerState: PlayerState;
   newPlayerState: PlayerState;
-}
-
-export interface TurnResult extends TurnResultWithoutReward {
-  playerReward: number;
 }
 
 export class Game {
@@ -41,6 +37,8 @@ export class Game {
 
   public readonly player: Player;
   public readonly rewardPolicy: RewardPolicy;
+
+  private lastTurnResult: TurnResult | undefined;
 
   constructor({
     gridLengthX,
@@ -60,6 +58,11 @@ export class Game {
   }
 
   public takeTurn(): TurnResult {
+    if (this.lastTurnResult) {
+      const reward = this.rewardPolicy.getReward(this.lastTurnResult);
+      this.player.controller.observeResult(this.lastTurnResult, reward);
+    }
+
     const playerAction = this.player.controller.takeAction(this.player.state);
 
     const oldPlayerState = this.player.state;
@@ -99,20 +102,13 @@ export class Game {
 
     this.player.state = newPlayerState;
 
-    const resultWithoutReward: TurnResultWithoutReward = {
+    const result: TurnResult = {
       playerAction,
       newPlayerState,
       oldPlayerState,
     };
 
-    const playerReward = this.rewardPolicy.getReward(resultWithoutReward);
-
-    const result: TurnResult = {
-      ...resultWithoutReward,
-      playerReward,
-    };
-
-    this.player.controller.observeResult(result);
+    this.lastTurnResult = result;
 
     return result;
   }

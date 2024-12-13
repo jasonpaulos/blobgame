@@ -81,12 +81,12 @@ Determine a state, e.g.:
     const action = this.solver.decide(state);
     return actions[action];
   }
-  observeResult(result: TurnResult): void {
+  observeResult(result: TurnResult, reward: number): void {
     /*
 Now calculate some Reward and let the Solver learn from it, e.g.:
 */
-    console.log("Reward:", result.playerReward);
+    console.log("Reward:", reward);
 
-    this.solver.learn(result.playerReward);
+    this.solver.learn(reward);
   }
 }

@@ -1,9 +1,9 @@
 import * as THREE from "three";
 import gsap from "gsap";
-import { Game, PlayerAction } from "./game";
+import { Game, PlayerAction, RewardPolicy } from "./game";
 import { QLearningPlayerController } from "./qlearning";
 // import { ReinforceJSPlayerController } from "./reinforce";
-import { AutoRewardPolicy } from "./rewardPolicies";
+import { AutoRewardPolicy, ManualRewardPolicy } from "./rewardPolicies";
 
 // Create the scene
 const scene = new THREE.Scene();
@@ -37,10 +37,13 @@ const gridMaxZ = Math.floor(gridSize / 2);
 const learningController = new QLearningPlayerController({
   alpha: 0.1,
   gamma: 0.9,
-  epsilon: 1.2,
-  epsilonDecaryRate: 0.999,
+  maxEpsilon: 1,
+  minEpsilon: 0.1,
+  epsilonDecayPeriod: /*1200*/ 100,
 });
 // const learningController = new ReinforceJSPlayerController();
+
+const rewardPolicy = new ManualRewardPolicy(); // new AutoRewardPolicy();
 
 const game = new Game({
   gridLengthX: gridSize,
@@ -52,7 +55,7 @@ const game = new Game({
       zPosition: Math.floor(gridSize / 2),
     },
   },
-  rewardPolicy: new AutoRewardPolicy(),
+  rewardPolicy,
 });
 
 function gamePositionToThreePosition(x: number, z: number): THREE.Vector3 {
@@ -164,32 +167,42 @@ function playerActionToString(action: PlayerAction): string {
   }
 }
 
-let running = false;
-
-function toggleStart() {
-  if (running) {
-    running = false;
-    document.getElementById("startButton")!.textContent = "Continue";
-    return;
+function updateManualReward(value: number) {
+  const policy: RewardPolicy = rewardPolicy;
+  if (policy instanceof ManualRewardPolicy) {
+    policy.setReward(value);
+    document.getElementById("currentReward")!.textContent = value.toString();
   }
-  running = true;
-  step();
-  document.getElementById("startButton")!.textContent = "Pause";
+}
+
+if (!(rewardPolicy instanceof ManualRewardPolicy)) {
+  document.getElementById("currentReward")!.textContent = "auto";
+} else {
+  document.getElementById("currentReward")!.textContent = "0";
+}
+
+let autoplay = false;
+
+function toggleAutoplay() {
+  autoplay = (document.getElementById("autoplayCheckbox") as HTMLInputElement)
+    .checked;
+  if (autoplay) {
+    step();
+  }
 }
 
 let fastForwardRounds = 0;
 
 function fastForward() {
-  if (running && fastForwardRounds === 0) {
+  if (fastForwardRounds === 0) {
     fastForwardRounds = 100;
+    step();
   }
 }
 
 let round = 0;
 
 function step() {
-  if (!running) return;
-
   const stepDuration =
     fastForwardRounds > 0
       ? undefined
@@ -199,6 +212,8 @@ function step() {
         );
 
   const result = game.takeTurn();
+
+  updateManualReward(0);
 
   if (stepDuration !== undefined) {
     const newPlayerPosition = gamePositionToThreePosition(
@@ -227,8 +242,9 @@ function step() {
     updateArrows(); // Update arrows after each turn
 
     document.getElementById("round")!.textContent = round.toString();
-    document.getElementById("epsilon")!.textContent =
-      learningController.epsilon.toFixed(3);
+    document.getElementById("epsilon")!.textContent = learningController
+      .getEpsilon()
+      .toFixed(3);
     document.getElementById("currentState")!.textContent =
       `(${result.newPlayerState.xPosition}, ${result.newPlayerState.zPosition})`;
     document.getElementById("lastAction")!.textContent = playerActionToString(
@@ -238,19 +254,36 @@ function step() {
 
   round++;
 
-  if (stepDuration !== undefined) {
-    setTimeout(step, stepDuration + 100);
-  } else {
-    fastForwardRounds--;
-    setTimeout(step, 0);
+  if (autoplay || fastForwardRounds > 0) {
+    if (stepDuration !== undefined) {
+      setTimeout(step, stepDuration + 100);
+    } else {
+      fastForwardRounds--;
+      setTimeout(step, 0);
+    }
   }
 }
 
-// Add event listener to the buttons
-document.getElementById("startButton")!.addEventListener("click", toggleStart);
+// Add event listeners
+document
+  .getElementById("autoplayCheckbox")!
+  .addEventListener("change", toggleAutoplay);
+document.getElementById("nextRoundButton")!.addEventListener("click", step);
 document
   .getElementById("fastForwardButton")!
   .addEventListener("click", fastForward);
+
+for (const rewardValue of [-100, -10, -1, 0, 1, 10, 100]) {
+  let qualifier = "";
+  if (rewardValue < 0) {
+    qualifier = "Minus";
+  } else if (rewardValue > 0) {
+    qualifier = "Plus";
+  }
+  document
+    .getElementById(`setReward${qualifier}${Math.abs(rewardValue)}`)!
+    .addEventListener("click", () => updateManualReward(rewardValue));
+}
 
 // Render the scene
 function animate() {

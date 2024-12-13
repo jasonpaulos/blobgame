@@ -44,26 +44,34 @@ export class QLearningPlayerController extends PlayerController {
   private qTable: Map<string, Map<PlayerAction, number>>;
   private alpha: number;
   private gamma: number;
-  public epsilon: number;
-  private epsilonDecaryRate: number;
+
+  private maxEpsilon: number;
+  private minEpsilon: number;
+  private epsilonDecayPeriod: number;
+
+  private currentRound: number;
 
   constructor({
     alpha,
     gamma,
-    epsilon,
-    epsilonDecaryRate,
+    maxEpsilon,
+    minEpsilon,
+    epsilonDecayPeriod,
   }: {
     alpha: number;
     gamma: number;
-    epsilon: number;
-    epsilonDecaryRate: number;
+    maxEpsilon: number;
+    minEpsilon: number;
+    epsilonDecayPeriod: number;
   }) {
     super();
     this.qTable = new Map();
     this.alpha = alpha;
     this.gamma = gamma;
-    this.epsilon = epsilon;
-    this.epsilonDecaryRate = epsilonDecaryRate;
+    this.maxEpsilon = maxEpsilon;
+    this.minEpsilon = minEpsilon;
+    this.epsilonDecayPeriod = epsilonDecayPeriod;
+    this.currentRound = 0;
   }
 
   private getStateKey(x: number, z: number): string {
@@ -84,9 +92,15 @@ export class QLearningPlayerController extends PlayerController {
     this.qTable.get(state)!.set(action, value);
   }
 
-  private decayEpsilon(): number {
-    this.epsilon *= this.epsilonDecaryRate;
-    return this.epsilon;
+  public getEpsilon(): number {
+    if (this.currentRound < this.epsilonDecayPeriod) {
+      return (
+        this.maxEpsilon -
+        ((this.maxEpsilon - this.minEpsilon) * this.currentRound) /
+          this.epsilonDecayPeriod
+      );
+    }
+    return this.minEpsilon;
   }
 
   public getActionSpread(x: number, z: number): Map<PlayerAction, number> {
@@ -95,27 +109,33 @@ export class QLearningPlayerController extends PlayerController {
   }
 
   public takeAction(state: PlayerState): PlayerAction {
+    let choice: PlayerAction;
+
     const stateKey = this.getStateKey(state.xPosition, state.zPosition);
-    if (Math.random() < this.decayEpsilon()) {
-      console.log("Exploring. Epsilon:", this.epsilon);
-      return actions[Math.floor(Math.random() * actions.length)];
+    if (Math.random() < this.getEpsilon()) {
+      console.log("Exploring. Epsilon:", this.getEpsilon());
+      choice = actions[Math.floor(Math.random() * actions.length)];
     } else {
-      console.log("Exploiting. Epsilon:", this.epsilon);
+      console.log("Exploiting. Epsilon:", this.getEpsilon());
       const qValues = this.qTable.get(stateKey);
       if (!qValues) return actions[Math.floor(Math.random() * actions.length)];
       const entries = Array.from(qValues.entries());
-      return entries[maxChoice(entries.map((e) => e[1]))][0];
+      choice = entries[maxChoice(entries.map((e) => e[1]))][0];
     }
+
+    this.currentRound++;
+
+    return choice;
   }
 
-  public observeResult(result: TurnResult): void {
+  public observeResult(result: TurnResult, reward: number): void {
     const { playerAction, oldPlayerState, newPlayerState } = result;
-    console.log("Reward:", result.playerReward);
+    console.log("Reward:", reward);
     this.updateQTable(
       oldPlayerState.xPosition,
       oldPlayerState.zPosition,
       playerAction,
-      result.playerReward,
+      reward,
       newPlayerState.xPosition,
       newPlayerState.zPosition,
     );

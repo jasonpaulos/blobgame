@@ -25,24 +25,51 @@
         z-index: 100;
         color: white;
       }
+      #rewardPolicy {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 100;
+        color: white;
+      }
     </style>
   </head>
   <body>
     <div id="controls">
-      <button id="startButton">Start</button>
-      <label for="stepDuration">Step Duration:</label>
-      <select id="stepDuration">
-        <option value="200">200ms</option>
-        <option value="500">500ms</option>
-        <option value="1000" selected>1000ms</option>
-      </select>
-      <button id="fastForwardButton">Fast Forward 100 rounds</button>
+      <div>
+        <input type="checkbox" id="autoplayCheckbox" />
+        <label for="autoplayCheckbox">Autoplay</label>
+      </div>
+      <div>
+        <label for="stepDuration">Step Duration:</label>
+        <select id="stepDuration">
+          <option value="200">200ms</option>
+          <option value="500">500ms</option>
+          <option value="1000" selected>1s</option>
+        </select>
+      </div>
+      <div>
+        <button id="fastForwardButton">Fast forward 100 rounds</button>
+        <button id="nextRoundButton">Next round</button>
+      </div>
     </div>
     <div id="info">
-      <p>Round: <span id="round">0</span></p>
+      <p>Round: <span id="round"></span></p>
       <p>Epsilon: <span id="epsilon"></span></p>
       <p>Current state: <span id="currentState"></span></p>
       <p>Last action: <span id="lastAction"></span></p>
+    </div>
+    <div id="rewardPolicy">
+      <span>Current reward: <span id="currentReward"></span></span>
+      <div>
+        <button id="setRewardMinus100">-100</button>
+        <button id="setRewardMinus10">-10</button>
+        <button id="setRewardMinus1">-1</button>
+        <button id="setReward0">0</button>
+        <button id="setRewardPlus1">+1</button>
+        <button id="setRewardPlus10">+10</button>
+        <button id="setRewardPlus100">+100</button>
+      </div>
     </div>
     <script type="module" src="index.ts"></script>
   </body>
