@@ -1,11 +1,11 @@
 {
   "name": "blobgame",
   "version": "1.0.0",
-  "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "parcel src/index.html",
-    "build": "tsc",
+    "build": "parcel build src/index.html",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

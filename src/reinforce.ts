@@ -23,14 +23,14 @@ export class ReinforceJSPlayerController extends PlayerController {
 
     const width = 400;
     const height = 400;
-    const numberOfStates = 3;
+    const numberOfStates = 4;
     const numberOfActions = 5;
     const env = new DQNEnv(width, height, numberOfStates, numberOfActions);
 
     const opt = new DQNOpt();
     opt.setTrainingMode(true);
     opt.setNumberOfHiddenUnits([/*100*/ 4]); // mind the array here, currently only one layer supported! Preparation for DNN in progress...
-    opt.setEpsilonDecay(1.0, 0.3, 500 /*1e6*/);
+    opt.setEpsilonDecay(0.8, 0.2, 100 /*1e6*/);
     opt.setEpsilon(0.05);
     opt.setGamma(0.9);
     opt.setAlpha(0.1); // 0.005
@@ -38,7 +38,7 @@ export class ReinforceJSPlayerController extends PlayerController {
     opt.setLossClamp(1.0);
     opt.setRewardClipping(true);
     opt.setRewardClamp(1.0);
-    opt.setExperienceSize(1000 /*1e6*/);
+    opt.setExperienceSize(5 /*1e6*/);
     opt.setReplayInterval(5);
     opt.setReplaySteps(5);
 
@@ -54,8 +54,8 @@ export class ReinforceJSPlayerController extends PlayerController {
   }
 
   public getActionSpread(x: number, z: number): Map<PlayerAction, number> {
-    const stateVector = new Mat(3, 1);
-    stateVector.setFrom([x - 2.5, z - 2.5, (x - 2.5) * (z - 2.5)]);
+    const stateVector = new Mat(4, 1);
+    stateVector.setFrom([1, x - 3.5, z - 3.5, (x - 3.5) * (z - 3.5)]);
     const actionVector = this.solver["forwardQ"](stateVector);
     const spread = new Map<PlayerAction, number>();
     for (let i = 0; i < actions.length; i++) {
@@ -69,10 +69,11 @@ export class ReinforceJSPlayerController extends PlayerController {
 Determine a state, e.g.:
 */
     const state = [
+      1,
       /* Array with numerical values and length of 20 as configured via numberOfStates */
-      playerState.xPosition - 2.5,
-      playerState.zPosition - 2.5,
-      (playerState.xPosition - 2.5) * (playerState.zPosition - 2.5),
+      playerState.xPosition - 3.5,
+      playerState.zPosition - 3.5,
+      (playerState.xPosition - 3.5) * (playerState.zPosition - 3.5),
     ];
 
     /*

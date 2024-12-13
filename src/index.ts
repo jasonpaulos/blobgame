@@ -2,7 +2,7 @@ import * as THREE from "three";
 import gsap from "gsap";
 import { Game, PlayerAction, RewardPolicy } from "./game";
 import { QLearningPlayerController } from "./qlearning";
-// import { ReinforceJSPlayerController } from "./reinforce";
+import { ReinforceJSPlayerController } from "./reinforce";
 import { AutoRewardPolicy, ManualRewardPolicy } from "./rewardPolicies";
 
 // Create the scene
@@ -43,7 +43,8 @@ const learningController = new QLearningPlayerController({
 });
 // const learningController = new ReinforceJSPlayerController();
 
-const rewardPolicy = new ManualRewardPolicy(); // new AutoRewardPolicy();
+const rewardPolicy = new ManualRewardPolicy();
+// const rewardPolicy = new AutoRewardPolicy();
 
 const game = new Game({
   gridLengthX: gridSize,
