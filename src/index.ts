@@ -286,6 +286,13 @@ for (const rewardValue of [-100, -10, -1, 0, 1, 10, 100]) {
     .addEventListener("click", () => updateManualReward(rewardValue));
 }
 
+// Add event listener for keydown event
+document.addEventListener("keydown", (event) => {
+  if (event.key === "n") {
+    step();
+  }
+});
+
 // Render the scene
 function animate() {
   requestAnimationFrame(animate);
